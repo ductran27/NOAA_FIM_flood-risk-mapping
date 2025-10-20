@@ -1,0 +1,16 @@
+# Python dependencies for Flood Risk Impact Mapping System
+
+# Data processing
+pandas>=1.5.0
+numpy>=1.23.0
+
+# Configuration
+PyYAML>=6.0
+
+# Note: For full HAND-FIM functionality, additional dependencies needed:
+# - boto3 (AWS S3 access)
+# - google-cloud-storage (Google Cloud NWM data)
+# - rasterio, gdal (geospatial raster processing)
+# - geopandas (vector data processing)
+# - netCDF4 (NWM NetCDF files)
+# These are not included in base install to keep demonstration simple

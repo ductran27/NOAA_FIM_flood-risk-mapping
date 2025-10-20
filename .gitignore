@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Data files
+data/*.csv
+data/*.json
+data/*.nc
+data/*.hdf
+!data/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Credentials (never commit)
+.env
+*.json  # Google Cloud credentials
+hand-*.json
+
+# AWS credentials
+.aws/

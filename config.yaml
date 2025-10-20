@@ -1,0 +1,37 @@
+# Configuration for Flood Risk Impact Mapping System
+
+# Study area configuration
+study_area:
+  huc_id: "06010105"  # Upper French Broad River
+  name: "Upper French Broad"
+  state: "TN/NC"
+  bbox: [-84, 35, -82, 37]  # [west, south, east, north]
+
+# NWM configuration
+nwm:
+  forecast_range: "short"  # short, medium, or long
+  real_time_hour: "t00z"   # t00z, t06z, t12z, or t18z
+  forecast_date: "2024-09-27"
+
+# HAND-FIM configuration
+fim:
+  depth_classes:
+    low: [0.0001, 0.4]
+    moderate: [0.4, 0.8]
+    high: [0.8, 1.8]
+    very_high: [1.8, 999]
+  resolution_m: 10
+
+# SVI configuration
+svi:
+  indicators:
+    - socioeconomic
+    - household_composition
+    - minority_status
+    - housing_transportation
+  resolution_m: 10
+
+# Risk mapping configuration
+risk:
+  classification_method: "quantile"  # quantile or threshold
+  quantiles: [0.25, 0.50, 0.75]

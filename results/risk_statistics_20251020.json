@@ -1,0 +1,11 @@
+{
+  "total_locations": 150,
+  "low_risk_count": 52,
+  "moderate_risk_count": 29,
+  "high_risk_count": 32,
+  "very_high_risk_count": 37,
+  "low_risk_pct": 34.66666666666667,
+  "moderate_risk_pct": 19.333333333333332,
+  "high_risk_pct": 21.333333333333336,
+  "very_high_risk_pct": 24.666666666666668
+}

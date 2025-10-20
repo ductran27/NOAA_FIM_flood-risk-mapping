@@ -1,0 +1,2 @@
+# This file ensures the data directory is tracked by git
+# FIM data files will be stored here but ignored by .gitignore
