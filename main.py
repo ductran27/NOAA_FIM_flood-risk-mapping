@@ -13,7 +13,6 @@ from nwm_retriever import NWMRetriever
 from fim_generator import FIMGenerator
 from svi_processor import SVIProcessor
 from risk_mapper import RiskMapper
-from fim_visualizer import FIMVisualizer
 
 
 def load_config():
@@ -39,7 +38,6 @@ def main():
         fim_generator = FIMGenerator(config)
         svi_processor = SVIProcessor(config)
         risk_mapper = RiskMapper(config)
-        visualizer = FIMVisualizer(config)
         print(f"Modules initialized")
         
         # Step 1: Retrieve NWM streamflow data
@@ -82,19 +80,9 @@ def main():
         print(f"  High Risk: {stats['high_risk_pct']:.1f}%")
         print(f"  Very High Risk: {stats['very_high_risk_pct']:.1f}%")
         
-        # Generate visualizations
-        print(f"\n=== Generating Visualizations ===")
-        visualizer.create_depth_map(depth_map)
-        print(f"  Flood depth map created")
-        visualizer.create_svi_map(svi_raster)
-        print(f"  SVI map created")
-        visualizer.create_risk_map(risk_map)
-        print(f"  Risk impact map created")
-        
         print(f"\n=== Workflow Complete ===")
         print(f"Finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"Maps saved in plots/ directory")
-        print(f"Data saved in output/ directory")
+        print(f"Results saved in output/ and results/ directories")
         
     except Exception as e:
         print(f"\nError occurred: {str(e)}")
