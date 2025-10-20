@@ -50,6 +50,21 @@ Generated products:
 - Combined flood risk impact maps
 - Statistical summaries
 
+## Learning Resources
+
+**Want to learn more about operational flood forecasting and HAND-FIM methodology?**
+
+Complete course available at:
+**https://edx.hydrolearn.org/courses/course-v1:CIROH_HydroLearn+OP_040+2025/about**
+
+This HydroLearn course covers:
+- NOAA National Water Model operations
+- HAND-FIM flood inundation mapping
+- Real-time flood forecasting workflows
+- Emergency management applications
+
 ## Notes
 
 Integrates multiple federal datasets (NOAA, CDC) for comprehensive flood risk assessment. Focuses on actionable information for emergency managers and disaster response teams.
+
+Based on methodologies taught in CIROH HydroLearn operational flood forecasting course.
