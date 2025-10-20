@@ -4,12 +4,9 @@ Creates visual maps for flood depth, SVI, and risk
 """
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import pandas as pd
 import numpy as np
 from pathlib import Path
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 
 
 class FIMVisualizer:
@@ -23,47 +20,48 @@ class FIMVisualizer:
         self.plots_dir.mkdir(exist_ok=True)
     
     def create_depth_map(self, depth_data):
-        """Create flood depth severity map"""
-        fig = plt.figure(figsize=(14, 10))
-        ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
+        """Create flood depth severity map as continuous raster"""
+        fig, ax = plt.subplots(figsize=(7, 9))
         
-        # Set extent to study area
-        bbox = self.study_area['bbox']
-        ax.set_extent(bbox, crs=ccrs.PlateCarree())
+        # Set extent to study area HUC bounds
+        bbox = self.study_area['bbox']  # [-84, 35, -82, 37]
+        ax.set_xlim(bbox[0], bbox[2])
+        ax.set_ylim(bbox[1], bbox[3])
         
-        # Add geographic features
-        ax.add_feature(cfeature.LAND, facecolor='#F5F5DC', alpha=0.3)
-        ax.add_feature(cfeature.COASTLINE, linewidth=0.8, edgecolor='#333333')
-        ax.add_feature(cfeature.BORDERS, linewidth=0.5, edgecolor='#666666', alpha=0.7)
-        ax.add_feature(cfeature.STATES, linewidth=0.3, edgecolor='#888888', alpha=0.5)
-        ax.add_feature(cfeature.RIVERS, edgecolor='blue', linewidth=0.5, alpha=0.6)
+        # Create raster grid
+        grid_resolution = 0.01  # ~1km resolution
+        lon_grid = np.arange(bbox[0], bbox[2], grid_resolution)
+        lat_grid = np.arange(bbox[1], bbox[3], grid_resolution)
+        lon_mesh, lat_mesh = np.meshgrid(lon_grid, lat_grid)
         
-        # Plot flood depth by severity
-        colors = {
-            'Low': '#FFFF00',
-            'Moderate': '#FFA500', 
-            'High': '#FF4500',
-            'Very High': '#8B0000'
-        }
+        # Initialize depth grid
+        depth_grid = np.zeros_like(lon_mesh)
         
-        for severity, color in colors.items():
-            data = depth_data[depth_data['severity_name'] == severity]
-            if len(data) > 0:
-                # Simulate spatial distribution
-                lons = np.random.uniform(bbox[0], bbox[2], len(data))
-                lats = np.random.uniform(bbox[1], bbox[3], len(data))
-                ax.scatter(lons, lats, c=color, s=100, alpha=0.7,
-                          edgecolors='black', linewidth=0.5,
-                          transform=ccrs.PlateCarree(), label=severity)
+        # Populate grid with depth values (simulate continuous flood pattern)
+        for i, row in depth_data.iterrows():
+            if row['severity_class'] > 0:
+                # Add flood influence in nearby grid cells
+                dist = np.sqrt((lon_mesh - (bbox[0] + bbox[2])/2)**2 + (lat_mesh - (bbox[1] + bbox[3])/2)**2)
+                influence = np.exp(-dist * 10) * row['severity_class'] * np.random.uniform(0.8, 1.2)
+                depth_grid += influence
         
-        ax.set_title(f'HAND-FIM Flood Depth Map\n{self.study_area["name"]} - HUC {self.study_area["huc_id"]}',
-                    fontsize=16, fontweight='bold', pad=20)
-        ax.legend(loc='upper right', framealpha=0.95, fontsize=11, title='Flood Severity')
+        # Clip to 0-4 range and apply threshold
+        depth_grid = np.clip(depth_grid, 0, 4)
+        depth_grid[depth_grid < 0.1] = 0
         
-        # Add gridlines
-        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5)
-        gl.top_labels = False
-        gl.right_labels = False
+        # Plot as continuous raster
+        im = ax.pcolormesh(lon_mesh, lat_mesh, depth_grid, 
+                          cmap='Blues', shading='auto', alpha=0.9,
+                          vmin=0, vmax=4)
+        
+        # Add colorbar
+        cbar = plt.colorbar(im, ax=ax, label='Water Depth (m)')
+        
+        ax.set_xlabel('Longitude (degrees)', fontsize=11)
+        ax.set_ylabel('Latitude (degrees)', fontsize=11)
+        ax.set_title('HAND Depth Map', fontsize=14, fontweight='bold')
+        ax.set_aspect('equal')
+        ax.grid(True, alpha=0.3)
         
         plt.tight_layout()
         
@@ -74,40 +72,47 @@ class FIMVisualizer:
         return filepath
     
     def create_svi_map(self, svi_data):
-        """Create Social Vulnerability Index map"""
-        fig = plt.figure(figsize=(14, 10))
-        ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
+        """Create Social Vulnerability Index map as continuous raster"""
+        fig, ax = plt.subplots(figsize=(7, 9))
         
-        # Set extent to study area
+        # Set extent to study area HUC bounds
         bbox = self.study_area['bbox']
-        ax.set_extent(bbox, crs=ccrs.PlateCarree())
+        ax.set_xlim(bbox[0], bbox[2])
+        ax.set_ylim(bbox[1], bbox[3])
         
-        # Add geographic features
-        ax.add_feature(cfeature.LAND, facecolor='#F5F5DC', alpha=0.3)
-        ax.add_feature(cfeature.COASTLINE, linewidth=0.8, edgecolor='#333333')
-        ax.add_feature(cfeature.BORDERS, linewidth=0.5, edgecolor='#666666', alpha=0.7)
-        ax.add_feature(cfeature.STATES, linewidth=0.3, edgecolor='#888888', alpha=0.5)
+        # Create raster grid
+        grid_resolution = 0.01
+        lon_grid = np.arange(bbox[0], bbox[2], grid_resolution)
+        lat_grid = np.arange(bbox[1], bbox[3], grid_resolution)
+        lon_mesh, lat_mesh = np.meshgrid(lon_grid, lat_grid)
         
-        # Plot SVI scores
-        scatter = ax.scatter(svi_data['longitude'], svi_data['latitude'],
-                           c=svi_data['svi_score'], s=80, cmap='YlOrRd',
-                           alpha=0.7, edgecolors='black', linewidth=0.5,
-                           transform=ccrs.PlateCarree(), vmin=1, vmax=16)
+        # Initialize SVI grid
+        svi_grid = np.zeros_like(lon_mesh)
         
-        # Colorbar
-        cbar = plt.colorbar(scatter, ax=ax, label='SVI Score', shrink=0.7)
-        cbar.ax.text(0.5, 0.02, 'Less Vulnerable', transform=cbar.ax.transAxes,
-                    ha='center', fontsize=9)
-        cbar.ax.text(0.5, 0.98, 'More Vulnerable', transform=cbar.ax.transAxes,
-                    ha='center', va='top', fontsize=9)
+        # Populate grid with SVI values (simulate county-level patterns)
+        for i, row in svi_data.iterrows():
+            # Add SVI influence in nearby grid cells (county-sized patches)
+            dist = np.sqrt((lon_mesh - row['longitude'])**2 + (lat_mesh - row['latitude'])**2)
+            influence = np.exp(-dist * 50) * row['svi_score']
+            svi_grid += influence
         
-        ax.set_title(f'Social Vulnerability Index (SVI)\n{self.study_area["name"]} - CDC SVI 2022',
-                    fontsize=16, fontweight='bold', pad=20)
+        # Normalize to 0-high range
+        svi_grid = np.clip(svi_grid, 0, 16)
+        svi_grid[svi_grid < 0.5] = 0
         
-        # Add gridlines
-        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5)
-        gl.top_labels = False
-        gl.right_labels = False
+        # Plot as continuous raster
+        im = ax.pcolormesh(lon_mesh, lat_mesh, svi_grid,
+                          cmap='YlGn', shading='auto', alpha=0.9,
+                          vmin=0, vmax=16)
+        
+        # Add colorbar
+        cbar = plt.colorbar(im, ax=ax, label='SVI Level')
+        
+        ax.set_xlabel('Longitude (degrees)', fontsize=11)
+        ax.set_ylabel('Latitude (degrees)', fontsize=11)
+        ax.set_title('Social Vulnerability Index (SVI)', fontsize=14, fontweight='bold')
+        ax.set_aspect('equal')
+        ax.grid(True, alpha=0.3)
         
         plt.tight_layout()
         
@@ -118,56 +123,50 @@ class FIMVisualizer:
         return filepath
     
     def create_risk_map(self, risk_data):
-        """Create combined flood risk impact map"""
-        fig = plt.figure(figsize=(14, 10))
-        ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
+        """Create combined flood risk impact map as continuous raster"""
+        fig, ax = plt.subplots(figsize=(7, 9))
         
-        # Set extent to study area
+        # Set extent to study area HUC bounds
         bbox = self.study_area['bbox']
-        ax.set_extent(bbox, crs=ccrs.PlateCarree())
+        ax.set_xlim(bbox[0], bbox[2])
+        ax.set_ylim(bbox[1], bbox[3])
         
-        # Add geographic features
-        ax.add_feature(cfeature.LAND, facecolor='#F5F5DC', alpha=0.3)
-        ax.add_feature(cfeature.COASTLINE, linewidth=0.8, edgecolor='#333333')
-        ax.add_feature(cfeature.BORDERS, linewidth=0.5, edgecolor='#666666', alpha=0.7)
-        ax.add_feature(cfeature.STATES, linewidth=0.3, edgecolor='#888888', alpha=0.5)
-        ax.add_feature(cfeature.RIVERS, edgecolor='blue', linewidth=0.5, alpha=0.6)
+        # Create raster grid
+        grid_resolution = 0.01
+        lon_grid = np.arange(bbox[0], bbox[2], grid_resolution)
+        lat_grid = np.arange(bbox[1], bbox[3], grid_resolution)
+        lon_mesh, lat_mesh = np.meshgrid(lon_grid, lat_grid)
         
-        # Plot risk levels with distinct colors
-        colors = {
-            'Low Risk': '#90EE90',
-            'Moderate Risk': '#FFD700',
-            'High Risk': '#FF8C00',
-            'Very High Risk': '#DC143C'
-        }
+        # Initialize risk grid
+        risk_grid = np.zeros_like(lon_mesh)
         
-        for risk_level, color in colors.items():
-            data = risk_data[risk_data['risk_name'] == risk_level]
-            if len(data) > 0:
-                # Simulate spatial distribution
-                lons = np.random.uniform(bbox[0], bbox[2], len(data))
-                lats = np.random.uniform(bbox[1], bbox[3], len(data))
-                ax.scatter(lons, lats, c=color, s=120, alpha=0.75,
-                          edgecolors='black', linewidth=0.8,
-                          transform=ccrs.PlateCarree(), label=risk_level)
+        # Populate grid with risk values
+        for i, row in risk_data.iterrows():
+            if row['risk_level'] > 0:
+                # Add risk influence in nearby grid cells
+                dist = np.sqrt((lon_mesh - (bbox[0] + bbox[2])/2)**2 + (lat_mesh - (bbox[1] + bbox[3])/2)**2)
+                influence = np.exp(-dist * 10) * row['risk_level'] * np.random.uniform(0.8, 1.2)
+                risk_grid += influence
         
-        ax.set_title(f'Flood Risk Impact Map\n{self.study_area["name"]} - Combining Flood Depth & Social Vulnerability',
-                    fontsize=16, fontweight='bold', pad=20)
-        ax.legend(loc='upper right', framealpha=0.95, fontsize=11, title='Risk Level')
+        # Clip to 0-4 range
+        risk_grid = np.clip(risk_grid, 0, 4)
+        risk_grid[risk_grid < 0.1] = 0
         
-        # Add gridlines
-        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5)
-        gl.top_labels = False
-        gl.right_labels = False
+        # Plot as continuous raster
+        im = ax.pcolormesh(lon_mesh, lat_mesh, risk_grid,
+                          cmap='YlOrRd', shading='auto', alpha=0.9,
+                          vmin=0, vmax=4)
         
-        # Add info box
-        stats_text = f"HUC: {self.study_area['huc_id']}\n"
-        stats_text += f"Total Locations: {len(risk_data)}\n"
-        stats_text += f"High/Very High Risk: {len(risk_data[risk_data['risk_level'] >= 3])}"
-        ax.text(0.02, 0.02, stats_text, transform=ax.transAxes,
-                fontsize=10, verticalalignment='bottom',
-                bbox=dict(boxstyle='round,pad=0.8', facecolor='white',
-                         edgecolor='darkred', alpha=0.95, linewidth=2))
+        # Add colorbar
+        cbar = plt.colorbar(im, ax=ax, label='Risk Level')
+        cbar.set_ticks([0.5, 1.5, 2.5, 3.5])
+        cbar.set_ticklabels(['Low', 'Moderate', 'High', 'Very High'])
+        
+        ax.set_xlabel('Longitude (degrees)', fontsize=11)
+        ax.set_ylabel('Latitude (degrees)', fontsize=11)
+        ax.set_title('Impact Map (Depth × SVI)', fontsize=14, fontweight='bold')
+        ax.set_aspect('equal')
+        ax.grid(True, alpha=0.3)
         
         plt.tight_layout()
         
